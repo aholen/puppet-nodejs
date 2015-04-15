@@ -14,7 +14,8 @@ define nodejs::npm (
   $source       = undef,
   $install_opt  = undef,
   $remove_opt   = undef,
-  $exec_as_user = undef
+  $exec_as_user = undef,
+  $exec_as_user_home = undef,
 ) {
   include nodejs
 
@@ -42,16 +43,23 @@ define nodejs::npm (
     # if exec user is undefined, exec environment should not be set, so the package will get installed globally
     $exec_env = undef
   } else {
-    # if exec user is defined, exec environment depends on the operating system
-    case $::operatingsystem {
-      'Debian','Ubuntu','RedHat','SLEL','Fedora','CentOS': {
-        $exec_env = "HOME=/home/${exec_as_user}"
+
+    if $exec_as_user_home == undef {
+      # if exec user is defined, exec environment depends on the operating system
+      case $::operatingsystem {
+        'Debian','Ubuntu','RedHat','SLEL','Fedora','CentOS': {
+          $exec_env = "HOME=/home/${exec_as_user}"
+        }
+        default: {
+          # so far only linux systems are supported with this option
+          fail('unsupported operating system')
+        }
       }
-      default: {
-        # so far only linux systems are supported with this option
-        fail('unsupported operating system')
+      } else
+      {
+        $exec_env = "HOME=/${exec_as_user_home}/${exec_as_user}"
+
       }
-    }
   }
 
   if $ensure == present {
